@@ -20,6 +20,7 @@ type PvzService interface {
 	AddProduct(ctx context.Context, pvzID string, productType string) (string, error)
 	DeleteLastProduct(ctx context.Context, pvzID string) error
 	CloseReception(ctx context.Context, pvzID string) (string, error)
+	GetPvzsInfoOptimized(ctx context.Context, page, limit int, startDate, endDate *time.Time) ([]entity.PvzInfo, error)
 }
 
 type pvzServiceImp struct {
@@ -243,4 +244,21 @@ func (s *pvzServiceImp) CloseReception(ctx context.Context, pvzID string) (strin
 		return "", err
 	}
 	return recID, nil
+}
+
+func (s *pvzServiceImp) GetPvzsInfoOptimized(
+	ctx context.Context,
+	page, limit int,
+	startDate, endDate *time.Time,
+) ([]entity.PvzInfo, error) {
+	pvzs, err := s.repo.GetPvzsWithReceptionsAndProducts(ctx, page, limit, startDate, endDate)
+	if err != nil {
+		s.logger.Errorw("GetPvzsInfoOptimized failed",
+			"error", err,
+			"page", page,
+			"limit", limit,
+		)
+		return nil, err
+	}
+	return pvzs, nil
 }

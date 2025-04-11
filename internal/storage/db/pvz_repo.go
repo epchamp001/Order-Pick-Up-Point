@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"fmt"
 	"order-pick-up-point/internal/errs"
 	"order-pick-up-point/internal/metrics"
 	"order-pick-up-point/internal/models/entity"
@@ -13,6 +14,7 @@ type PvzRepository interface {
 	CreatePvz(ctx context.Context, pvz entity.Pvz) (string, error)
 	GetPvzs(ctx context.Context, page, limit int) ([]entity.Pvz, error)
 	GetListOfPvzs(ctx context.Context) ([]entity.Pvz, error)
+	GetPvzsWithReceptionsAndProducts(ctx context.Context, page, limit int, startDate, endDate *time.Time) ([]entity.PvzInfo, error)
 }
 
 type postgresPvzRepository struct {
@@ -133,4 +135,121 @@ func (r *postgresPvzRepository) GetListOfPvzs(ctx context.Context) ([]entity.Pvz
 		return nil, errs.Wrap(err, errs.ErrInternalCode, "rows iteration error")
 	}
 	return pvzs, nil
+}
+
+func (r *postgresPvzRepository) GetPvzsWithReceptionsAndProducts(
+	ctx context.Context,
+	page, limit int,
+	startDate, endDate *time.Time,
+) ([]entity.PvzInfo, error) {
+	start := time.Now()
+	defer func() {
+		metrics.RecordDBQueryDuration("GetPvzsWithReceptionsAndProducts", time.Since(start).Seconds())
+	}()
+
+	offset := (page - 1) * limit
+	args := []interface{}{limit, offset}
+	argIndex := 3
+
+	query := `
+		SELECT
+			p.id AS pvz_id,
+			p.registration_date,
+			p.city,
+			r.id AS reception_id,
+			r.date_time AS reception_date,
+			r.status,
+			pr.id AS product_id,
+			pr.date_time AS product_date,
+			pr.type
+		FROM pvz p
+		LEFT JOIN reception r ON r.pvz_id = p.id
+		LEFT JOIN product pr ON pr.reception_id = r.id
+	`
+
+	if startDate != nil && endDate != nil {
+		query += fmt.Sprintf(" WHERE r.date_time BETWEEN $%d AND $%d", argIndex, argIndex+1)
+		args = append(args, startDate, endDate)
+		argIndex += 2
+	}
+
+	query += " ORDER BY p.registration_date DESC LIMIT $1 OFFSET $2"
+
+	rows, err := r.conn.GetExecutor(ctx).Query(ctx, query, args...)
+	if err != nil {
+		return nil, errs.Wrap(err, errs.ErrInternalCode, "failed to get pvz with receptions and products")
+	}
+	defer rows.Close()
+
+	pvzMap := make(map[string]*entity.PvzInfo)
+
+	for rows.Next() {
+		var (
+			pvzID, city, receptionID, status, productID, productType *string
+			pvzRegDate, receptionDate, productDate                   *time.Time
+		)
+
+		if err := rows.Scan(&pvzID, &pvzRegDate, &city, &receptionID, &receptionDate, &status, &productID, &productDate, &productType); err != nil {
+			return nil, errs.Wrap(err, errs.ErrInternalCode, "failed to scan pvz row")
+		}
+
+		if _, exists := pvzMap[*pvzID]; !exists {
+			pvzMap[*pvzID] = &entity.PvzInfo{
+				Pvz: entity.Pvz{
+					ID:               *pvzID,
+					RegistrationDate: *pvzRegDate,
+					City:             *city,
+				},
+			}
+		}
+
+		pvzInfo := pvzMap[*pvzID]
+
+		if receptionID != nil {
+			receptionExists := false
+			for i := range pvzInfo.Receptions {
+				if pvzInfo.Receptions[i].Reception.ID == *receptionID {
+					receptionExists = true
+					if productID != nil {
+						pvzInfo.Receptions[i].Products = append(
+							pvzInfo.Receptions[i].Products,
+							entity.Product{
+								ID:          *productID,
+								DateTime:    *productDate,
+								Type:        *productType,
+								ReceptionID: *receptionID,
+							},
+						)
+					}
+					break
+				}
+			}
+			if !receptionExists {
+				newReception := entity.ReceptionInfo{
+					Reception: entity.Reception{
+						ID:       *receptionID,
+						DateTime: *receptionDate,
+						PvzID:    *pvzID,
+						Status:   *status,
+					},
+				}
+				if productID != nil {
+					newReception.Products = append(newReception.Products, entity.Product{
+						ID:          *productID,
+						DateTime:    *productDate,
+						Type:        *productType,
+						ReceptionID: *receptionID,
+					})
+				}
+				pvzInfo.Receptions = append(pvzInfo.Receptions, newReception)
+			}
+		}
+	}
+
+	var result []entity.PvzInfo
+	for _, info := range pvzMap {
+		result = append(result, *info)
+	}
+
+	return result, nil
 }

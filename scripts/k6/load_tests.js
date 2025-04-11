@@ -10,7 +10,7 @@ export const options = {
             executor: 'constant-arrival-rate',
             rate: 1000,
             timeUnit: '1s',
-            duration: '3m',
+            duration: '2m',
             preAllocatedVUs: 100,
             maxVUs: 1000,
         },
@@ -61,18 +61,33 @@ export default function () {
         fail('Failed to create PVZ');
     }
 
-    // Получение списка ПВЗ
-    const getPvzRes = http.get(`${BASE_URL}/pvz?page=1&limit=10`, {
+    // // Получение списка ПВЗ
+    // const getPvzRes = http.get(`${BASE_URL}/pvz?page=1&limit=10`, {
+    //     headers: authHeaders,
+    // });
+    //
+    // const getPvzOk = check(getPvzRes, {
+    //     'get pvz status 200': (r) => r.status === 200,
+    //     'get pvz returns array': (r) => Array.isArray(r.json()),
+    // });
+    //
+    // errorRate.add(!getPvzOk);
+    // if (!getPvzOk) {
+    //     fail('Failed to get PVZ list');
+    // }
+
+    // Получение списка ПВЗ (оптимизированный метод)
+    const getOptimizedRes = http.get(`${BASE_URL}/pvz/optimized?page=1&limit=10`, {
         headers: authHeaders,
     });
 
-    const getPvzOk = check(getPvzRes, {
-        'get pvz status 200': (r) => r.status === 200,
-        'get pvz returns array': (r) => Array.isArray(r.json()),
+    const getOptimizedOk = check(getOptimizedRes, {
+        'optimized get pvz status 200': (r) => r.status === 200,
+        'optimized get pvz returns array': (r) => Array.isArray(r.json()),
     });
 
-    errorRate.add(!getPvzOk);
-    if (!getPvzOk) {
-        fail('Failed to get PVZ list');
+    errorRate.add(!getOptimizedOk);
+    if (!getOptimizedOk) {
+        fail('Failed to get optimized PVZ list');
     }
 }

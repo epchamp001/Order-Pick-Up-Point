@@ -38,5 +38,6 @@ func SetupRoutes(router *gin.Engine, authCtrl controller.AuthController, pvzCtrl
 			pvzCtrl.CloseReception(c)
 		})
 		protected.GET("/pvz", pvzCtrl.GetPvzsInfo)
+		protected.GET("/pvz/optimized", pvzCtrl.GetPvzsInfoOptimized)
 	}
 }
