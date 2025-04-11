@@ -1,0 +1,11 @@
+- id: "00000000-0000-0000-0000-000000000002"
+  email: "duplicate@example.com"
+  password: "$2a$10$examplehashedpasswordduplicate"
+  role: "moderator"
+  created_at: "2025-04-10T12:00:00Z"
+
+- id: "00000000-0000-0000-0000-000000000003"
+  email: "login_success@example.com"
+  password: "$2a$10$CDBczPgBjZLi7v7ctXBi3uIUKiWIO8DsvuvEHOl/82o33Q0Bse0ti"
+  role: "client"
+  created_at: "2025-04-10T12:00:00Z"

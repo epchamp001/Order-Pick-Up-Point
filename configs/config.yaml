@@ -1,0 +1,60 @@
+env: "dev"
+
+application:
+  app: "pick-up-point"
+
+public_server:
+  enable: true
+  endpoint: "0.0.0.0"
+  port: 8080
+  shutdown_timeout: 30
+
+grpc_server:
+  enable: true
+  endpoint: "0.0.0.0"
+  port: 3000
+  shutdown_timeout: 30
+
+gateway:
+  port: 3001
+  endpoint: "0.0.0.0"
+
+metrics:
+  endpoint: "0.0.0.0"
+  port: 9000
+  db_query_interval: 3
+
+storage:
+  postgres:
+    hosts:
+      - "${DB_HOST}"
+    port: 5432
+    database: "pick-up-point"
+    username: "champ001"
+    password: "${DB_PASSWORD}"
+    ssl_mode: "disable"
+    connection_attempts: 3
+    pool:
+      max_connections: 50
+      min_connections: 10
+      max_lifetime: 3600
+      max_idle_time: 300
+      health_check_period: 30
+
+jwt:
+  secret_key: "${JWT_SECRET_KEY}"
+  token_expiry: 86400
+
+allowed:
+  cities:
+    Moscow: true
+    Saint Petersburg: true
+    Kazan: true
+  product_types:
+    electronics: true
+    clothes: true
+    shoes: true
+  roles:
+    client: true
+    employee: true
+    moderator: true

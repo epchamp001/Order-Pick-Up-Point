@@ -1,0 +1,9 @@
+.idea/
+
+.env
+
+/coverage/coverage.out
+/coverage/coverage.html
+
+k6
+

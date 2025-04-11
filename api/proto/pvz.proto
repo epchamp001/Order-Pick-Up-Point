@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package pvz.v1;
+
+option go_package = "api/pb;pb";
+
+import "google/protobuf/timestamp.proto";
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "Order Pick-Up Point gRPC server";
+    version: "1.0";
+  };
+  host: "localhost:3001";
+};
+
+service PVZService {
+  // GetPVZList returns a list of PVZs.
+  // HTTP mapping: GET /listPvz
+  rpc GetPVZList(GetPVZListRequest) returns (GetPVZListResponse) {
+    option (google.api.http) = {
+      get: "/grpc/listPvz"
+    };
+  }
+}
+
+message PVZ {
+  string id = 1;
+  google.protobuf.Timestamp registration_date = 2;
+  string city = 3;
+}
+
+enum ReceptionStatus {
+  RECEPTION_STATUS_IN_PROGRESS = 0;
+  RECEPTION_STATUS_CLOSED = 1;
+}
+
+message GetPVZListRequest {}
+
+message GetPVZListResponse {
+  repeated PVZ pvzs = 1;
+}

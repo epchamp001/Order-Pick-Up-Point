@@ -1,0 +1,15 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'pick_up_point_app'
+    static_configs:
+      - targets: ['order_pickup_point_app:9000']
+
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9000']
+
+remote_write:
+  - url: http://localhost:9000/api/v1/write

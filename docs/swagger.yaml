@@ -1,0 +1,549 @@
+basePath: /
+definitions:
+  dto.CloseReceptionResponse:
+    description: Response returned after successfully closing a reception.
+    properties:
+      receptionId:
+        example: recv456
+        type: string
+    type: object
+  dto.CreatePvzPostRequest:
+    description: Request payload for creating a new PVZ.
+    properties:
+      city:
+        example: Moscow
+        type: string
+    required:
+    - city
+    type: object
+  dto.CreatePvzResponse:
+    description: Response returned after successfully creating a PVZ.
+    properties:
+      id:
+        example: pvz789
+        type: string
+    type: object
+  dto.CreateReceptionRequest:
+    description: Request payload for creating a new reception.
+    properties:
+      dateTime:
+        example: "2025-04-09T15:04:05Z"
+        type: string
+      pvzId:
+        example: pvz789
+        type: string
+    required:
+    - pvzId
+    type: object
+  dto.CreateReceptionResponse:
+    description: Response returned after a reception is created.
+    properties:
+      receptionId:
+        example: recv456
+        type: string
+    type: object
+  dto.DeleteProductResponse:
+    description: Response returned after successful deletion of the product.
+    properties:
+      message:
+        example: product deleted successfully
+        type: string
+    type: object
+  dto.DummyLoginPostRequest:
+    description: Request payload for dummy login. Provide a desired user role ("client",
+      "employee", "moderator") to obtain a JWT token.
+    properties:
+      role:
+        example: employee
+        type: string
+    type: object
+  dto.Error:
+    description: Standard error response containing an error message.
+    properties:
+      message:
+        example: invalid request body
+        type: string
+    type: object
+  dto.LoginPostRequest:
+    description: Request payload for login using email and password.
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      password:
+        example: strongpassword123
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  dto.ProductDTO:
+    description: Represents a product with its details.
+    properties:
+      dateTime:
+        example: "2025-04-09T15:04:05Z"
+        type: string
+      id:
+        example: prod123
+        type: string
+      receptionId:
+        example: recv456
+        type: string
+      type:
+        example: electronics
+        type: string
+    type: object
+  dto.ProductsPostRequest:
+    description: Request payload for adding a product to a reception.
+    properties:
+      pvzId:
+        example: pvz789
+        type: string
+      type:
+        example: clothes
+        type: string
+    required:
+    - pvzId
+    - type
+    type: object
+  dto.ProductsPostResponse:
+    description: Response returned after successfully adding a product.
+    properties:
+      productId:
+        example: prod123
+        type: string
+    type: object
+  dto.PvzDTO:
+    description: Represents a PVZ (pickup point) with its information.
+    properties:
+      city:
+        example: Moscow
+        type: string
+      id:
+        example: pvz789
+        type: string
+      registrationDate:
+        example: "2025-04-09T12:00:00Z"
+        type: string
+    type: object
+  dto.PvzGet200ResponseInner:
+    description: Response model for retrieving PVZ information, including receptions
+      and products.
+    properties:
+      pvz:
+        $ref: '#/definitions/dto.PvzDTO'
+      receptions:
+        items:
+          $ref: '#/definitions/dto.PvzGet200ResponseInnerReceptionsInner'
+        type: array
+    type: object
+  dto.PvzGet200ResponseInnerReceptionsInner:
+    description: Represents a reception within a PVZ, including its associated products.
+    properties:
+      products:
+        items:
+          $ref: '#/definitions/dto.ProductDTO'
+        type: array
+      reception:
+        $ref: '#/definitions/dto.ReceptionDTO'
+    type: object
+  dto.ReceptionDTO:
+    description: Represents a reception record for goods.
+    properties:
+      dateTime:
+        example: "2025-04-09T15:04:05Z"
+        type: string
+      id:
+        example: recv456
+        type: string
+      pvzId:
+        example: pvz789
+        type: string
+      status:
+        example: in_progress
+        type: string
+    type: object
+  dto.RegisterPostRequest:
+    description: Request payload for user registration.
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      password:
+        example: strongpassword123
+        type: string
+      role:
+        example: moderator
+        type: string
+    required:
+    - email
+    - password
+    - role
+    type: object
+  dto.RegisterResponse:
+    description: Response returned after successful user registration.
+    properties:
+      user_id:
+        example: user123
+        type: string
+    type: object
+  dto.TokenResponse:
+    description: Response containing a JWT token.
+    properties:
+      token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: epchamp001@gmail.com
+    name: Egor Ponyaev
+    url: https://github.com/epchamp001
+  description: Service for processing orders at Pick-Up Point. Allow registration
+    and login by email/password as well as dummy login using user roles (client, employee,
+    moderator).
+  license:
+    name: MIT
+  title: Order Pick-Up Point
+  version: "1.0"
+paths:
+  /dummyLogin:
+    post:
+      consumes:
+      - application/json
+      description: Get a JWT token by passing a desired user role (client, employee,
+        moderator) through dummy login.
+      parameters:
+      - description: Dummy login request with role
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.DummyLoginPostRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: JWT token
+          schema:
+            $ref: '#/definitions/dto.TokenResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/dto.Error'
+        "401":
+          description: 'Unauthorized: invalid role or error during dummy login'
+          schema:
+            $ref: '#/definitions/dto.Error'
+      summary: Dummy login for testing
+      tags:
+      - auth
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Login a user using email and password. Returns a JWT token if credentials
+        are valid.
+      parameters:
+      - description: User login data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.LoginPostRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: JWT token
+          schema:
+            $ref: '#/definitions/dto.TokenResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/dto.Error'
+        "401":
+          description: 'Unauthorized: invalid credentials'
+          schema:
+            $ref: '#/definitions/dto.Error'
+      summary: Login a user
+      tags:
+      - auth
+  /products:
+    post:
+      consumes:
+      - application/json
+      description: Add a new product to the last open reception for a given PVZ. Only
+        employees can add products.
+      parameters:
+      - description: Product addition data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ProductsPostRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Product added, returning its ID
+          schema:
+            $ref: '#/definitions/dto.ProductsPostResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/dto.Error'
+        "401":
+          description: 'Unauthorized: missing token or insufficient privileges'
+          schema:
+            $ref: '#/definitions/dto.Error'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/dto.Error'
+      security:
+      - BearerAuth: []
+      summary: Add a product to the current reception
+      tags:
+      - pvz
+  /pvz:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a paginated list of PVZ with reception and product details.
+      parameters:
+      - description: Page number
+        example: 1
+        in: query
+        name: page
+        required: true
+        type: integer
+      - description: Number of items per page
+        example: 10
+        in: query
+        name: limit
+        required: true
+        type: integer
+      - description: 'Filter: start date in RFC3339 format'
+        example: '"2025-04-09T00:00:00Z"'
+        in: query
+        name: startDate
+        type: string
+      - description: 'Filter: end date in RFC3339 format'
+        example: '"2025-04-09T23:59:59Z"'
+        in: query
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of PVZ information
+          schema:
+            items:
+              $ref: '#/definitions/dto.PvzGet200ResponseInner'
+            type: array
+        "400":
+          description: Invalid query parameters
+          schema:
+            $ref: '#/definitions/dto.Error'
+        "401":
+          description: 'Unauthorized: missing token or insufficient privileges'
+          schema:
+            $ref: '#/definitions/dto.Error'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/dto.Error'
+      security:
+      - BearerAuth: []
+      summary: Get PVZ information
+      tags:
+      - pvz
+    post:
+      consumes:
+      - application/json
+      description: Create a new PVZ. Only users with a moderator role can create a
+        PVZ.
+      parameters:
+      - description: PVZ creation data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreatePvzPostRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Newly created PVZ information
+          schema:
+            $ref: '#/definitions/dto.CreatePvzResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/dto.Error'
+        "401":
+          description: 'Unauthorized: missing token or insufficient privileges'
+          schema:
+            $ref: '#/definitions/dto.Error'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/dto.Error'
+      security:
+      - BearerAuth: []
+      summary: Create a new PVZ
+      tags:
+      - pvz
+  /pvz/{pvzId}/close_last_reception:
+    post:
+      consumes:
+      - application/json
+      description: Close the last open reception for a specified PVZ, finalizing the
+        reception process. Only employees can close receptions.
+      parameters:
+      - description: PVZ ID
+        example: '"pvz123"'
+        in: path
+        name: pvzId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Closed reception details with its ID
+          schema:
+            $ref: '#/definitions/dto.CloseReceptionResponse'
+        "400":
+          description: 'Bad request: missing pvzId'
+          schema:
+            $ref: '#/definitions/dto.Error'
+        "401":
+          description: 'Unauthorized: missing token or insufficient privileges'
+          schema:
+            $ref: '#/definitions/dto.Error'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/dto.Error'
+      security:
+      - BearerAuth: []
+      summary: Close the current reception
+      tags:
+      - pvz
+  /pvz/{pvzId}/delete_last_product:
+    post:
+      consumes:
+      - application/json
+      description: Delete the last product that was added to an open reception for
+        a given PVZ (LIFO order). Only employees can delete products.
+      parameters:
+      - description: PVZ ID
+        example: '"pvz123"'
+        in: path
+        name: pvzId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Product deletion success message
+          schema:
+            $ref: '#/definitions/dto.DeleteProductResponse'
+        "400":
+          description: 'Bad request: missing pvzId'
+          schema:
+            $ref: '#/definitions/dto.Error'
+        "401":
+          description: 'Unauthorized: missing token or insufficient privileges'
+          schema:
+            $ref: '#/definitions/dto.Error'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/dto.Error'
+      security:
+      - BearerAuth: []
+      summary: Delete the last added product from the current reception
+      tags:
+      - pvz
+  /receptions:
+    post:
+      consumes:
+      - application/json
+      description: Initiate a new reception for a specified PVZ. Only employees can
+        create a reception.
+      parameters:
+      - description: Reception creation data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateReceptionRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Reception created, returning its ID
+          schema:
+            $ref: '#/definitions/dto.CreateReceptionResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/dto.Error'
+        "401":
+          description: 'Unauthorized: missing token or insufficient privileges'
+          schema:
+            $ref: '#/definitions/dto.Error'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/dto.Error'
+      security:
+      - BearerAuth: []
+      summary: Create a new reception for goods
+      tags:
+      - pvz
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user with email, password and role (client, employee,
+        moderator).
+      parameters:
+      - description: User registration data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RegisterPostRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User registration success response with user ID
+          schema:
+            $ref: '#/definitions/dto.RegisterResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/dto.Error'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/dto.Error'
+      summary: Register a new user
+      tags:
+      - auth
+securityDefinitions:
+  BearerAuth:
+    description: JWT token. Obtain the token via /login (using email and password)
+      or via /dummy Login (passing desired role).
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

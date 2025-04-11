@@ -1,0 +1,107 @@
+version: "3.8"
+services:
+  app:
+    container_name: order_pickup_point_app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      DB_HOST: "postgres"
+      DB_PASSWORD: "123champ123"
+      JWT_SECRET_KEY: "zN1qT3v5PbC+fKmB9pVjQ13O8+wsyxMGj5L9C/wT4lU="
+      DB_DSN: "postgres://champ001:123champ123@postgres:5432/pick-up-point?sslmode=disable"
+    ports:
+      - "8080:8080"   # HTTP сервер
+      - "3000:3000"   # gRPC сервер
+      - "3001:3001"   # gRPC gateway
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - pick-up-point
+
+  postgres:
+    container_name: postgres_container
+    image: postgres:17.4
+    environment:
+      POSTGRES_DB: "pick-up-point"
+      POSTGRES_USER: "champ001"
+      POSTGRES_PASSWORD: "123champ123"
+    volumes:
+      - pick-up-point-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U champ001 -d pick-up-point"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 6G
+    networks:
+      - pick-up-point
+
+  pgadmin:
+    container_name: pgadmin_container
+    image: dpage/pgadmin4:8.4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "epchamp001@gmail.com"
+      PGADMIN_DEFAULT_PASSWORD: "123champ123"
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    ports:
+      - "5050:80"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+    networks:
+      - pick-up-point
+
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:latest
+    ports:
+      - "9000:9000"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--web.enable-remote-write-receiver'
+      - "--web.listen-address=:9000"
+    networks:
+      - pick-up-point
+
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:latest
+    ports:
+      - "3002:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    environment:
+      - GF_SECURITY_ADMIN_USER=champ001
+      - GF_SECURITY_ADMIN_PASSWORD=123champ123
+    depends_on:
+      - prometheus
+    networks:
+      - pick-up-point
+
+volumes:
+  pick-up-point-data:
+  pgadmin-data:
+  grafana-data:
+
+networks:
+  pick-up-point:
+    driver: bridge
