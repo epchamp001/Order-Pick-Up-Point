@@ -300,11 +300,11 @@ Swagger UI для gRPC
 
 **Order Pick-Up Point** - этот dashboard собирает метрики, связанные с HTTP-запросами, Запросами к базе данных, Операциями бизнес-логики.
 
-![image](https://github.com/user-attachments/assets/f70f8517-39fa-438e-ae09-000ecdeffab8)
+![image](https://github.com/user-attachments/assets/769a272d-06f1-4052-a3ff-deec6d201fce)
 
 **k6 Prometheus (Native Histograms)** - данный dashboard визуализирует метрики, собранные в ходе нагрузочного тестирования с использованием `k6`.
 
-![image](https://github.com/user-attachments/assets/4ddbc862-e752-42d6-8934-05fd9e00a7c0)
+![image](https://github.com/user-attachments/assets/a50814ab-dd13-41e6-9c2a-7346b662ea0d)
 
 
 ### Graceful Shutdown 🛑
