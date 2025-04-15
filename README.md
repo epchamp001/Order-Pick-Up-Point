@@ -306,6 +306,11 @@ Swagger UI для gRPC
 
 ![image](https://github.com/user-attachments/assets/a50814ab-dd13-41e6-9c2a-7346b662ea0d)
 
+### Trace 
+Добавил trace:
+
+![image](https://github.com/user-attachments/assets/1aa4aa3b-24f0-44d8-aa01-23d862eb47f0)
+
 
 ### Graceful Shutdown 🛑
 
