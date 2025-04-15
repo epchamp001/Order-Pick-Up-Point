@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	controller "order-pick-up-point/internal/controller/http"
 	"order-pick-up-point/internal/controller/http/middleware"
 	"order-pick-up-point/internal/metrics"
@@ -12,6 +13,7 @@ import (
 
 func SetupRoutes(router *gin.Engine, authCtrl controller.AuthController, pvzCtrl controller.PvzController, tokenSvc jwt.TokenService) {
 	router.Use(metrics.GinPrometheusMiddleware())
+	router.Use(otelgin.Middleware("order-pick-up-point"))
 
 	router.POST("/dummyLogin", authCtrl.DummyLogin)
 	router.POST("/register", authCtrl.Register)

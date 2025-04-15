@@ -3,6 +3,8 @@ package db
 import (
 	"context"
 	"fmt"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"order-pick-up-point/internal/errs"
 	"order-pick-up-point/internal/metrics"
 	"order-pick-up-point/internal/models/entity"
@@ -30,12 +32,23 @@ func NewPvzRepository(conn TxManager, log logger.Logger) PvzRepository {
 }
 
 func (r *postgresPvzRepository) CreatePvz(ctx context.Context, pvz entity.Pvz) (string, error) {
+	ctx, span := otel.Tracer("postgresPvzRepository").Start(ctx, "CreatePvzRepo")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.String("city", pvz.City),
+		attribute.String("db.system", "postgresql"),
+	)
+
 	start := time.Now()
 	defer func() {
 		metrics.RecordDBQueryDuration("CreatePvz", time.Since(start).Seconds())
 	}()
 
+	ctx, spanN := otel.Tracer("postgresPvzRepository").Start(ctx, "Executor")
 	pool := r.conn.GetExecutor(ctx)
+	spanN.End()
+
 	query := `
 		INSERT INTO pvz (registration_date, city)
 		VALUES ($1, $2)
@@ -44,6 +57,7 @@ func (r *postgresPvzRepository) CreatePvz(ctx context.Context, pvz entity.Pvz) (
 
 	var pvzID string
 	err := pool.QueryRow(ctx, query, pvz.RegistrationDate, pvz.City).Scan(&pvzID)
+
 	if err != nil {
 		r.logger.Errorw("creating PVZ",
 			"error", err,

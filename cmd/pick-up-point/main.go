@@ -68,4 +68,5 @@ func main() {
 	}
 
 	log.Info("Application stopped gracefully")
+
 }

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v5"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"order-pick-up-point/internal/errs"
 	"order-pick-up-point/internal/metrics"
 	"order-pick-up-point/internal/models/entity"
@@ -42,6 +44,11 @@ func NewPvzService(repo db.Repository, txManager db.TxManager, logger logger.Log
 }
 
 func (s *pvzServiceImp) CreatePvz(ctx context.Context, city string) (string, error) {
+	ctx, span := otel.Tracer("pvzService").Start(ctx, "CreatePvzService")
+	defer span.End()
+
+	span.SetAttributes(attribute.String("city", city))
+
 	if !s.allowedCities[strings.ToLower(city)] {
 		return "", errs.New(errs.ErrInvalidCity, fmt.Sprintf("city '%s' is not allowed", city))
 	}

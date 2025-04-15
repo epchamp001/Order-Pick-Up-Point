@@ -1,4 +1,4 @@
-env: "dev"
+env: "prod"
 
 application:
   app: "pick-up-point"
@@ -36,7 +36,7 @@ storage:
     connection_attempts: 3
     pool:
       max_connections: 50
-      min_connections: 10
+      min_connections: 20
       max_lifetime: 3600
       max_idle_time: 300
       health_check_period: 30

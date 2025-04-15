@@ -3,6 +3,9 @@ package http
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"net/http"
 	"order-pick-up-point/internal/models/dto"
 	"order-pick-up-point/internal/models/mapper"
@@ -46,7 +49,16 @@ func NewPvzController(pvzSvc http2.PvzService) PvzController {
 // @Failure 500 {object} dto.Error "Internal server error"
 // @Router /pvz [post]
 func (p *pvzController) CreatePvz(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	span := trace.SpanFromContext(ctx)
+	defer span.End()
+
+	span.SetAttributes(attribute.String("handler", "CreatePvz"))
+
 	if !CheckRole(c, "moderator") {
+		span.SetStatus(codes.Error, "unauthorized access")
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
 		return
 	}
 
@@ -56,7 +68,7 @@ func (p *pvzController) CreatePvz(c *gin.Context) {
 		return
 	}
 
-	pvzId, err := p.pvzSvc.CreatePvz(c, req.City)
+	pvzId, err := p.pvzSvc.CreatePvz(ctx, req.City)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, dto.Error{Message: err.Error()})
 		return

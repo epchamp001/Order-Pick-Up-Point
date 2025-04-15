@@ -7,10 +7,17 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/protobuf/encoding/protojson"
+	"log"
 	"net"
 	"net/http"
 	"order-pick-up-point/api/pb"
@@ -40,8 +47,45 @@ type Server struct {
 	logger       logger.Logger
 }
 
+func initTracer(ctx context.Context) func() {
+	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(
+		jaeger.WithEndpoint("http://jaeger:14268/api/traces"),
+	))
+	if err != nil {
+		log.Fatalf("failed to initialize Jaeger exporter: %v", err)
+	}
+
+	res, err := resource.New(ctx,
+		resource.WithAttributes(
+			semconv.ServiceNameKey.String("order-pick-up-point"),
+		),
+	)
+	if err != nil {
+		log.Fatalf("failed to create resource: %v", err)
+	}
+
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithBatcher(exp),
+		sdktrace.WithResource(res),
+	)
+	otel.SetTracerProvider(tp)
+
+	return func() {
+		if err := tp.Shutdown(ctx); err != nil {
+			log.Fatalf("failed to shutdown TracerProvider: %v", err)
+		}
+	}
+}
+
 func NewServer(cfg *config.Config, log logger.Logger) *Server {
 	c := NewCloser()
+
+	tracerCleanup := initTracer(context.Background())
+	c.Add(func(ctx context.Context) error {
+		log.Infow("Shutting down tracer")
+		tracerCleanup()
+		return nil
+	})
 
 	pgPool, err := cfg.Storage.ConnectionToPostgres(log)
 	if err != nil {
@@ -92,7 +136,10 @@ func NewServer(cfg *config.Config, log logger.Logger) *Server {
 	pvzGRPCService := grpcServ.NewPvzService(pvzRepo, log)
 	pvzGRPCController := grpcController.NewPvzServer(pvzGRPCService)
 
-	grpcSrv := grpc.NewServer()
+	grpcSrv := grpc.NewServer(
+		grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
+		grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()),
+	)
 	pb.RegisterPVZServiceServer(grpcSrv, pvzGRPCController)
 
 	reflection.Register(grpcSrv)
