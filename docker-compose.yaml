@@ -23,7 +23,7 @@ services:
 
   postgres:
     container_name: postgres_container
-    image: postgres:17.4
+    image: postgres:14
     environment:
       POSTGRES_DB: "pick-up-point"
       POSTGRES_USER: "champ001"
